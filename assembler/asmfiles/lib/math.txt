@@ -1,0 +1,6 @@
+.abs    #absolute val of r0
+    CMI R0,0
+    JLT x
+    RET
+.x
+

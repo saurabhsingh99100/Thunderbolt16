@@ -1,0 +1,3 @@
+.sleep
+    LDI R0,10
+    SLR R0
