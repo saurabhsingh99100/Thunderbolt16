@@ -1,0 +1,10 @@
+# Logisim PLA program table
+000xxxx 1 # UNCOND
+001x1xx 1 # EQ
+010x0xx 1 # NQ
+0111xxx 1 # LT
+1000xxx 1 # GT
+1011xxx 1 # LE
+101x1xx 1 # LE
+1100xxx 1 # GE
+110x1xx 1 # GE
