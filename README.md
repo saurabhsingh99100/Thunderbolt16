@@ -9,8 +9,8 @@ TbAssembler is a two pass assembler that assembles 'code.txt' file into bytecode
 
 The command line syntax of Assembler is as follows:
 python assembler.py <filename>.txt <debug flag>
-  file name: it is of .txt format
-  debug flag: '-d' : prints address mapping of all detected commands, labels, variables and output bytecode sequence.
+file name: it is of .txt format
+debug flag: '-d' : prints address mapping of all detected commands, labels, variables and output bytecode sequence.
   
 
 Assembly language reference & sample codes will be uploaded in upcoming commits.
