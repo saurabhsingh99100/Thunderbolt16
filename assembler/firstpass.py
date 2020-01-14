@@ -5,6 +5,52 @@ import sys
 LABELS={}
 VARIABLES={}
 
+
+#pseudo operations $x mean xth parameter given when calling (x=0 is first parameter)
+PSOP={  'INC':['ADI $0,$0,1'],
+        'DCR':['SBI $0,$0,1'],
+
+        'PUSH':['STRG $0,SP','SBI SP,SP,1'],
+        'POP':['ADI SP,SP,1','LDRG $0,SP'],
+
+        'PUSHREGS':['STRG R4,SP','SBI SP,SP,1',
+                    'STRG R3,SP','SBI SP,SP,1',
+                    'STRG R2,SP','SBI SP,SP,1',
+                    'STRG R1,SP','SBI SP,SP,1',
+                    'STRG R0,SP','SBI SP,SP,1',
+                    'STRG LR,SP','SBI SP,SP,1',],
+
+        'POPREGS': ['ADI SP,SP,1','LDRG LR,SP',
+                    'ADI SP,SP,1','LDRG R0,SP',
+                    'ADI SP,SP,1','LDRG R1,SP',
+                    'ADI SP,SP,1','LDRG R2,SP',
+                    'ADI SP,SP,1','LDRG R3,SP',
+                    'ADI SP,SP,1','LDRG R4,SP',],
+
+        'CALL':    ['STRG R4,SP','SBI SP,SP,1',
+                    'STRG R3,SP','SBI SP,SP,1',
+                    'STRG R2,SP','SBI SP,SP,1',
+                    'STRG R1,SP','SBI SP,SP,1',
+                    'STRG R0,SP','SBI SP,SP,1',
+                    'STRG LR,SP','SBI SP,SP,1',
+                    'JAL $0',
+                    'ADI SP,SP,1','LDRG LR,SP',
+                    'ADI SP,SP,1','LDRG R0,SP',
+                    'ADI SP,SP,1','LDRG R1,SP',
+                    'ADI SP,SP,1','LDRG R2,SP',
+                    'ADI SP,SP,1','LDRG R3,SP',
+                    'ADI SP,SP,1','LDRG R4,SP',],
+        'CP':['CLF','CMP $0,$1'],
+        'CPI':['CLF','CMI $0,$1'],
+
+        'BOOT':['LDI LR,0','LDI SP,0xfff0'],
+        
+        'PRINT':['IOS $0,0']
+
+    }
+
+
+
 def error(txt): #DISPLAYS ERROR MESSAGE AND EXITS
     sys.exit("\n- Pass1 error:- "+txt+": file assembling unsuccessful...")
 
@@ -84,6 +130,64 @@ def include(Target):
         error(Target+' library not found')
     return txt
 
+
+def psop(code):
+    l=len(code)
+    a=0
+    #print code
+    while(a<l):
+        line=code[a]
+        #print line
+        if '.' in line or '=' in line:
+            a+=1
+            continue
+        else:
+            line=line.split(' ')
+            
+            if len(line)>1:
+                line[1]=line[1].split(',')
+                
+                if line[0] in PSOP.keys():
+                    cde=PSOP[line[0]]
+                    stmnts=[]
+                    
+                    for b in range(0,len(cde)):
+                        stmt=cde[b]
+                        stmt=stmt.split(' ')
+                        if len(stmt)==1:
+                            stmnts=stmnts+[stmt[0]]
+                        else:
+                            stmt[1]=stmt[1].split(',')
+                            for d in range(0,len(stmt[1])):
+                                c=stmt[1][d]
+                                if '$' in c:
+                                    c=int(c.replace('$',''))
+                                    c=line[1][c]
+                                    stmt[1][d]=c
+                            # convert to str
+                            statement=stmt[0]+' '
+                            for c in stmt[1]:
+                                statement=statement+c+','
+                            statement=statement[0:len(statement)-1]# remove extra comma
+                            stmnts=stmnts+[statement]
+
+                    code=code[0:a]+stmnts+code[a+1:l]
+                    l=l+len(stmnts)-1
+
+            else: #len=1
+                if line[0] in PSOP.keys():
+                    cde=PSOP[line[0]]
+                    code=code[0:a]+cde+code[a+1:l]
+                    l=l+len(cde)-1
+            #print code
+            
+            a+=1
+    
+
+
+    return code
+
+
 def saveLabel(label,add):
     label=str(label).replace('.','')
     add=int(add)
@@ -147,27 +251,45 @@ def firstpass(code):
 
     #preprocess
     code=preprocess(code)       
-    
     #find .main
     if not('.main' in code):        
         error('main label absent')
+
+    if code[0]!='BOOT': #addboot
+        code=['BOOT']+code
+
 
     #add hault if not present
     code=addHault(code)         
     
     #get length without lib
+ 
     l=getlen(code)
-
+    if l%2==0: #length of code not even it wil give wrong addresses to library code after .data since .data section has address incremeent of 1 instead of 2
+        code=code+['DUMVAR=0']
+        l+=1
     #include libraries
-    for line in code:
-        if 'import' in line:
-            Target=(line.replace("import","")).strip()
-            additionalcode=include(Target)
-            code=code+additionalcode
-            code.remove(line)
+    flag=1 #assume it has import
+    while flag==1:
+        for line in code:
+            if 'import' in line:
+                Target=(line.replace("import","")).strip()
+                additionalcode=include(Target)
+                code=code+additionalcode
+                code.remove(line)
+                flag=0
+                break
 
+        #check for 'import' in whole code
+        for line in code:
+            if 'import' in line:
+                flag=1
+                break
+            else:
+                flag=0
+        
+    code=psop(code)
 
-    #add pseudo ops here
 
     #assign addresses #save labels and variables
     code=assignAddresses(code,l)

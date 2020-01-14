@@ -1,6 +1,5 @@
 #second pass
 import sys
-Aflag=0  #advanced user can access regsters 5,6,& 7.
 keywords={  "NOP":"00000",
             
             "NOT":["00001","0000"],
@@ -65,9 +64,10 @@ keywords={  "NOP":"00000",
             "JGTL":["01110","100"],
             "JLEL":["01110","101"],
             "JGEL":["01110","110"],
-            "RET":"01111",
+            "RET":"01111","RETR":"01111",
 
             "IOS":"10000",
+            "IOR":"10001",
             "CLF":"10100",
 
             "RST":"11100",
@@ -166,7 +166,7 @@ def substitute(line,VARIABLES,LABELS):
 
         for i in range(0,len(line[2])):
             if line[2][i] in VARIABLES.keys():
-                line[2][i]=VARIABLES[[2][i]][1]
+                line[2][i]=VARIABLES[line[2][i]][1]
             elif (line[2][i].replace('[','')).replace(']','') in VARIABLES.keys():
                 line[2][i]=(line[2][i].replace('[','')).replace(']','')
                 line[2][i]=VARIABLES[line[2][i]][0]
@@ -177,11 +177,8 @@ def substitute(line,VARIABLES,LABELS):
     return line
 
 def regToBin(txt):
-    global Aflag
     if txt in ['SP','LR','TR']:
-        if Aflag!=1:
-            error('Registers 5(TR),6(LR) & 7(SP) are not available for users')
-
+        
         if txt=='SP':
             return '111'
         elif txt=='LR':
@@ -191,8 +188,8 @@ def regToBin(txt):
 
     else:
         reg=int((txt.replace('R','')).replace('r',''))    
-        if reg>=5 and Aflag!=1:
-            error('Registers 5(TR),6(LR) & 7(SP) are not available for users')
+        if reg>=5:
+            print('pass2 Warning: in '+txt+' : Reg>5 should be used carefully.')
         return tobin(3,reg)
 
 
@@ -204,6 +201,9 @@ def immToBin(txt):
 
 def identify(token):
     code=''
+    if token[0] not in keywords:
+        error(token[0]+' : Undefined operation')
+
     y=keywords[token[0]]
     if isinstance(y,list):
         opcode=y[0]
@@ -265,9 +265,15 @@ def identify(token):
     elif token[0]=='RET':
         code=opcode +"000000"+"110"+"000000000000000000"
                              #rb=r6
+    elif token[0]=='RETR':
+        code=opcode +"000000"+regToBin(token[1][0])+"000000000000000000"
 
     elif token[0]=='IOS':
-        code=opcode +regToBin(token[1][0])+ '0000000000000000000' + tobin(5,token[1][1])
+        code=opcode +'000'+regToBin(token[1][0])+ '00000000000000000' + tobin(5,token[1][1])
+    
+    elif token[0]=='IOR':
+        code=opcode +regToBin(token[1][0])+'00000000000000000000' + tobin(5,token[1][1])
+    
         
     elif token[0]=='CLF':
         code=opcode + "0000000000000000000000000000"
@@ -336,9 +342,8 @@ def HEX(code):  #BINARY TO HEX CONVERTER USED IN POSTPROCESSING
 
 #1#separate address field, opname, parameters 
 #2) replace vars and labels
-def secondpass(code,LABELS,VARIABLES,a):
-    global Aflag
-    Aflag=a
+def secondpass(code,LABELS,VARIABLES):
+
     tmp=[]
     hexcode=''
     for line in code:
@@ -357,7 +362,7 @@ def secondpass(code,LABELS,VARIABLES,a):
         x=(HEX(binary))
         if len(x)>4:
             x=x[:4]+' '+x[4:]
-        print binary
+        #print binary
         hexcode=hexcode+add+': '+x+'\n'
     return hexcode
     

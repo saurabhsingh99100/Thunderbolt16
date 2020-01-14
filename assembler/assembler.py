@@ -1,6 +1,7 @@
 import firstpass as p1
 import secondpass as p2
 import sys
+import os
 
 HEADER="v3.0 hex words addressed\n"
 LABELS={}
@@ -20,6 +21,7 @@ def generatefile(txt,name): #GENERATES O/P FILE
     return True       
 
 
+
 #--------------------------------------------------------------------------------------
 debugflag=0
 Aflag=0
@@ -34,11 +36,6 @@ else:
     if len(sys.argv)==3:
         if sys.argv[2]=='-d':
             debugflag=1
-        elif sys.argv[2]=='-a':
-            Aflag=1
-        elif sys.argv[2]=='-a-d' or sys.argv[2]=='-d-a':
-            Aflag=1
-            debugflag=1 
         else:
             error(' '+sys.argv[2]+': unidentified argument')
     
@@ -48,18 +45,19 @@ else:
         f=open(filename,"r")
         code=f.readlines()
         f.close
+        
         [code,LABELS,VARIABLES]=p1.firstpass(code) 
         if debugflag==1:
             print '----------------pass1---------------------'
             print '\ncode: '
-            print code  
+            for x in code:
+                print x  
             print '\nvariables: '
             print VARIABLES
             print '\nLABELS:'
             print LABELS
-            print '\n NOTE: IMMIDIATE should be < 32768\n'
-            
-        code=p2.secondpass(code,LABELS,VARIABLES,Aflag)
+          
+        code=p2.secondpass(code,LABELS,VARIABLES)
         code=HEADER+code
         if debugflag==1:
             print "----------------pass2---------------------\n"
