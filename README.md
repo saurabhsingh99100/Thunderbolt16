@@ -1,9 +1,9 @@
 # Thunderbolt16
-Thunderbolt16 is a 16 bit non piplined RISC processor.
+Thunderbolt16 is a 16-Bit non piplined RISC processor, which runs on a 32-bit Instruction set Architecture.
 ![circuit diagram](tb16.jpg)
 
-it supports a 32bit instruction set architecture. 64KB of address space and Dedicate IO instructions.
-ISA is proded in file "OP_excel.ods" file
+it supports 64KB of address space and Dedicate IO instructions.
+ISA is provided in file "OP_excel.ods" file
 
 TbAssembler is a two pass assembler that assembles 'code.txt' file into bytecode sequece (code_bytecode.txt) that can be loaded into RAM during Logisim simulation.
 
