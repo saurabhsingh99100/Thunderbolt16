@@ -1,5 +1,7 @@
 # Thunderbolt16
 Thunderbolt16 is a 16-Bit non piplined RISC processor, which runs on a 32-bit Instruction set Architecture.
+The design was simulated on Logisim-Evolution 4.0.1 & assembler programmed in python 2.7
+
 ![circuit diagram](tb16.jpg)
 
 it supports 64KB of address space and Dedicate IO instructions.
