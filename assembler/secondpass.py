@@ -47,8 +47,8 @@ keywords={  "NOP":"00000",
             "SVPC":"01010",            
             "STPC":"01011",
 
-            "CMP":"01100",
-            "CMI":"01101",
+            "CP":"01100",
+            "CI":"01101",
 
             "J":["01110","000"],
             "JEQ":["01110","001"],
@@ -80,68 +80,71 @@ keywords={  "NOP":"00000",
 def error(txt): #DISPLAYS ERROR MESSAGE AND EXITS
     sys.exit("\n- Pass2 error :- "+txt+"---\n\nfile assembling unsuccessful...")
 
+def twosComplement(str): 
+    n = len(str) 
+    # Traverse the string to get first  
+    # '1' from the last of string 
+    i = n - 1
+    while(i >= 0): 
+        if (str[i] == '1'): 
+            break
+  
+        i -= 1
+    # If there exists no '1' concatenate 1  
+    # at the starting of string 
+    if (i == -1): 
+        return '1'+str
+    # Continue traversal after the  
+    # position of first '1' 
+    k = i - 1
+    while(k >= 0): 
+        # Just flip the values 
+        if (str[k] == '1'): 
+            str = list(str) 
+            str[k] = '0'
+            str = ''.join(str) 
+        else: 
+            str = list(str) 
+            str[k] = '1'
+            str = ''.join(str) 
+  
+        k -= 1
+    # return the modified string 
+    return str
 
 def tobin(bits,val):        #CONVERS HEX/BIN/DEC TO "n" BIT BINARY NUMBER
     val=str(val)
     val=(val.replace('[','')).replace(']','')
-    Val=""
-    if '0x' in val:     #hex
-        val=val.replace("0x","")
-        for i in range(0,len(val)):
-            if val[i]=='0':
-                Val=Val+"0000"
-            elif val[i]=='1':
-                Val=Val+"0001"
-            elif val[i]=='2':
-                Val=Val+"0010"
-            elif val[i]=='3':
-                Val=Val+"0011"
-            elif val[i]=='4':
-                Val=Val+"0100"
-            elif val[i]=='5':
-                Val=Val+"0101"
-            elif val[i]=='6':
-                Val=Val+"0110"
-            elif val[i]=='7':
-                Val=Val+"0111"
-            elif val[i]=='8':
-                Val=Val+"1000"
-            elif val[i]=='9':
-                Val=Val+"1001"
-            elif val[i]=='a' or val[i]=='A':
-                Val=Val+"1010"
-            elif val[i]=='b' or val[i]=='B':
-                Val=Val+"1011"
-            elif val[i]=='c' or val[i]=='C':
-                Val=Val+"1100"
-            elif val[i]=='d' or val[i]=='D':
-                Val=Val+"1101"
-            elif val[i]=='e' or val[i]=='E':
-                Val=Val+"1110"
-            elif val[i]=='f' or val[i]=='F':
-                Val=Val+"1111"
+    binary=""
+    if '0b' in val:             #binary
+        val=val.replace('0b','')
 
-    elif '0b' in val: #already in bin
-        Val=val.replace("0b","") 
+    elif '0x' in val:           #hex
+        val=val.replace('0x','')
+        if val[0]=='f': #negativehex
+            val=bin(int(val,16)).replace("0b",'')
+        else:
+            val='0'+bin(int(val,16)).replace("0b",'')
+
         
-    else:              #decimal
-        Val=str(bin(int(val))).replace("0b","")
+    else:                       #decimal
+        if int(val)<0:
+            val=twosComplement('0'+bin(int(val)).replace('-0b',''))
+            
+        else:
+            val='0'+bin(int(val)).replace('0b','')
+            
+    if len(val)<bits: #sign extend
+        if val[0]=='0': #positive no
+            val='0'*(bits-len(val))+val
+        else: #-ve no
+            val='1'*(bits-len(val))+val
 
-    l=len(Val)
-    fval=""
-    if bits>l:
-        for i in range(0,bits-l):
-            fval="0"+fval
-        fval=fval+Val
-        return fval
-    elif bits<l:
-        for i in range(0,bits):
-            fval=Val[l-1]+fval
-            l-=1
-        return fval
     else:
-        return Val 
+        val=(val[-1*bits:-1]+val[-1])
 
+    return val
+ 
 
 
 def tokenize(txt):
@@ -250,10 +253,10 @@ def identify(token):
     elif token[0]=="STPC":
         code=opcode + "000000" + regToBin(token[1][0]) + "000000000000000000"
     
-    elif token[0]=="CMP":
+    elif token[0]=="CP":
         code=opcode + "000" + regToBin(token[1][0]) + regToBin(token[1][1]) + "00000000000000" + "0111"
     
-    elif token[0]=="CMI":
+    elif token[0]=="CI":
         code=opcode + "000" + regToBin(token[1][0]) + "0" + immToBin(token[1][1]) + "0111"
     
     elif token[0] in ['J','JEQ','JNQ','JLT','JGT','JLE','JGE']:

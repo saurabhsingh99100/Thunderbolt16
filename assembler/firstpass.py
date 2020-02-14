@@ -4,7 +4,7 @@ import sys
 
 LABELS={}
 VARIABLES={}
-
+libpath="/home/frozenalpha/Desktop/Thunderbolt/Tbassembler/asmfiles/lib/"
 
 #pseudo operations $x mean xth parameter given when calling (x=0 is first parameter)
 PSOP={  'INC':['ADI $0,$0,1'],
@@ -40,8 +40,8 @@ PSOP={  'INC':['ADI $0,$0,1'],
                     'ADI SP,SP,1','LDRG R2,SP',
                     'ADI SP,SP,1','LDRG R3,SP',
                     'ADI SP,SP,1','LDRG R4,SP',],
-        'CP':['CLF','CMP $0,$1'],
-        'CPI':['CLF','CMI $0,$1'],
+        'CMP':['CLF','CP $0,$1'],
+        'CMI':['CLF','CI $0,$1'],
 
         'BOOT':['LDI LR,0','LDI SP,0xfff0'],
         
@@ -122,7 +122,7 @@ def getlen(code):
 
 def include(Target):
     try:
-        f=open(str(os.getcwd())+"/asmfiles/lib/"+Target,"r")
+        f=open(str(libpath+Target),"r")
         txt=f.readlines()
         txt=preprocess(txt)
         f.close
@@ -229,7 +229,6 @@ def assignAddresses(code,l):
             address+=2
         else:
             pass
-
         i+=1
     return code
 
@@ -248,6 +247,7 @@ def removeLabels(code):
 #6) create labels table
 
 def firstpass(code):
+ 
 
     #preprocess
     code=preprocess(code)       
