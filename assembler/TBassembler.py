@@ -51,7 +51,9 @@ else:
             print('----------------pass1---------------------')
             print('\ncode: ')
             for x in code:
-                print(x)  
+                ad=int((x.split(' ')[0]).strip())
+                hexad=hex(ad)
+                print(hexad+x.replace(str(ad),''))  #prints address in hex
             print('\nvariables: ')
             print(VARIABLES)
             print('\nLABELS:')

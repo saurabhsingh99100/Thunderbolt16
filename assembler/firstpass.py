@@ -121,13 +121,27 @@ def getlen(code):
     return Length
 
 def include(Target):
-    try:
-        f=open(str(libpath+Target),"r")
-        txt=f.readlines()
-        txt=preprocess(txt)
-        f.close
-    except IOError:
-        error(Target+' library not found')
+    print(Target)
+    if Target[-1]=='*':
+        Target=Target.replace('*','')
+        files=os.listdir(libpath+Target)
+        txt=[]
+        for i in files:
+            if '.fun' in i:
+                f=open(str(libpath+Target+i),"r")
+                txt=txt+f.readlines()
+                txt=preprocess(txt)
+                f.close
+        #print(txt)
+    else:
+        try:
+            f=open(str(libpath+Target+'.fun'),"r")
+            txt=txt+f.readlines()
+            txt=preprocess(txt)
+            f.close
+        except IOError:
+            error(Target+' library not found')
+
     return txt
 
 

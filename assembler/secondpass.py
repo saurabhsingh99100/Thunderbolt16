@@ -162,7 +162,6 @@ def tokenize(txt):
 
 def substitute(line,VARIABLES,LABELS):
  
-
     if len(line)==3:     #usual ops all other cases will never contain var/label
         #search
         
@@ -173,10 +172,13 @@ def substitute(line,VARIABLES,LABELS):
             elif (line[2][i].replace('[','')).replace(']','') in VARIABLES.keys():
                 line[2][i]=(line[2][i].replace('[','')).replace(']','')
                 line[2][i]=VARIABLES[line[2][i]][0]
-        
+    
+    if line[1] in ['J','JEQ','JNQ','JLT','JGT','JLE','JGE','JAL','JEQL','JNQL','JLTL','JGTL','JLEL','JGEL']:
         for i in range(0,len(line[2])):
             if line[2][i] in LABELS.keys():
-                line[2][i]=LABELS[ line[2][i] ]
+                line[2][i]=LABELS[line[2][i]]
+            else:
+                error(line[2][i]+' : unrecognised label')
     return line
 
 def regToBin(txt):
@@ -352,16 +354,19 @@ def secondpass(code,LABELS,VARIABLES):
     for line in code:
         # tokenize format line=[address, opname, [operands]]
         line=tokenize(line)
-
+        #print(line)
         # substitute variables and labels
         line=substitute(line,VARIABLES,LABELS)
-        
+        #print(line)
         add=str(hex(int(line[0]))).replace('0x','')
+        
         if type(line[1])==str: #it is a stATEMENT
             # generate bytecode
             binary=identify(line[1:])
+            
         elif type(line[1])==list:
             binary=convertVar(line[1:])
+            
         x=(HEX(binary))
         if len(x)>4:
             x=x[:4]+' '+x[4:]
