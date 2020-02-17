@@ -223,6 +223,8 @@ def assignAddresses(code,l):
             tmp=code[i].split('=')
             saveVariable(tmp[0],address,tmp[1])
         
+        
+        
         if '.' in code[i]: #it is a label
             l+=1
             saveLabel(code[i],address)
