@@ -1,4 +1,4 @@
-#second pass
+#second pass 
 import sys
 keywords={  "NOP":"00000",
             
@@ -128,6 +128,7 @@ def tobin(bits,val):        #CONVERS HEX/BIN/DEC TO "n" BIT BINARY NUMBER
 
         
     else:                       #decimal
+        
         if int(val)<0:
             val=twosComplement('0'+bin(int(val)).replace('-0b',''))
             
@@ -148,27 +149,53 @@ def tobin(bits,val):        #CONVERS HEX/BIN/DEC TO "n" BIT BINARY NUMBER
 
 
 def tokenize(txt):
-    lst=list(txt.split(' '))
+    if '"' not in txt:
+        lst=list(txt.split(' '))
     
-    if len(lst)==3: #all usual operations
-        lst[2]=list(lst[2].split(','))
-    elif len(lst)==2: # variables and operations like HLT
-        if '=' in lst[1]:   #vars
-            lst[1]=lst[1].split('=')    
-        else:       # ops like HLT and NOP
-            pass
+        if len(lst)==3: #all usual operations
+            lst[2]=list(lst[2].split(','))
+        elif len(lst)==2: # variables and operations like HLT
+            if '=' in lst[1]:   #vars
+                lst[1]=lst[1].split('=')    
+            else:       # ops like HLT and NOP
+                pass
 
-    return lst
+        return lst
+    else:
+        
+        add=txt.split(' ')[0]
+        varname='&'+(txt.split(' ')[1]).split('=')[0]
+        #print(varname)
+        string=''
+        f=False
+        for i in txt:
+            if i=='"':
+                f=not f
+                continue
+            if f:
+                string=string+i
+        
+        return [add,[varname,string]]
+
+        
 
 def substitute(line,VARIABLES,LABELS):
- 
+
     if len(line)==3:     #usual ops all other cases will never contain var/label
         #search
         
 
         for i in range(0,len(line[2])):
             if line[2][i] in VARIABLES.keys():
+                o=VARIABLES[line[2][i]][1]
+                if '\'' or '"' in o:
+                    line[2][i]=VARIABLES[line[2][i]][0]
+                   
+                    continue
+
+            if line[2][i] in VARIABLES.keys():
                 line[2][i]=VARIABLES[line[2][i]][1]
+
             elif (line[2][i].replace('[','')).replace(']','') in VARIABLES.keys():
                 line[2][i]=(line[2][i].replace('[','')).replace(']','')
                 line[2][i]=VARIABLES[line[2][i]][0]
@@ -206,6 +233,7 @@ def immToBin(txt):
 
 def identify(token):
     code=''
+    #print(token)
     if token[0] not in keywords:
         error(token[0]+' : Undefined operation')
 
@@ -274,14 +302,14 @@ def identify(token):
         code=opcode +"000000"+regToBin(token[1][0])+"000000000000000000"
 
     elif token[0]=='IOS':
-        code=opcode +'000'+regToBin(token[1][0])+ '00000000000000000' + tobin(5,token[1][1])
+        code=opcode +'000'+regToBin(token[1][0])+ '00000000000000000' + tobin(4,token[1][1])
     
     elif token[0]=='IOR':
-        code=opcode +regToBin(token[1][0])+'00000000000000000000' + tobin(5,token[1][1])
+        code=opcode +regToBin(token[1][0])+'00000000000000000000' + tobin(4,token[1][1])
     
         
     elif token[0]=='CLF':
-        code=opcode + "0000000000000000000000000000"
+        code=opcode + "000000000000000000000000000"
 
     elif token[0]=="RST":
         code=opcode + "0000000000000000000000000000"
@@ -299,10 +327,20 @@ def identify(token):
 
     return code
 
+def toascii(l,s):
+    binary=''
+    for i in s:
+        binary=binary+tobin(8,ord(i))
+    return binary
 
 def convertVar(line):
-    val=tobin(16,line[0][1])
-    return val
+    if '&' in line[0][0]:
+        val=toascii(len(line[0][1]),line[0][1])
+        #print(val)
+        return val
+    else:    
+        val=tobin(16,line[0][1])
+        return val
 
 def HEX(code):  #BINARY TO HEX CONVERTER USED IN POSTPROCESSING
     i=0
@@ -351,26 +389,51 @@ def secondpass(code,LABELS,VARIABLES):
 
     tmp=[]
     hexcode=''
+    debugcode=''
     for line in code:
         # tokenize format line=[address, opname, [operands]]
+        #print(line)
         line=tokenize(line)
         #print(line)
         # substitute variables and labels
         line=substitute(line,VARIABLES,LABELS)
         #print(line)
-        add=str(hex(int(line[0]))).replace('0x','')
-        
+        add=line[0]
+        tempk=''
+        print(line)
+        for j in line:
+            if type(j)!=str: #list
+                for k in j:
+                    tempk+=str(k)+' '
+            else:   #str
+                if j in line[0]:
+                    tempk+=(hex(int(str(j).strip()))).replace('0x','')+': '
+                else:
+                    tempk+=str(j)+' '
+
+        debugcode=debugcode+tempk+'\n'
+
         if type(line[1])==str: #it is a stATEMENT
             # generate bytecode
-            binary=identify(line[1:])
+            binary=identify(line[1:]) 
             
         elif type(line[1])==list:
             binary=convertVar(line[1:])
-            
+        #print(binary)
+
         x=(HEX(binary))
-        if len(x)>4:
-            x=x[:4]+' '+x[4:]
+        ############imp#####print(add+' '+x)
+        #print(x)
+        final=''
+        #if len(x)>4:
+        for i in range(0,len(x),4):
+            final=final+x[i:i+4]+' '
+            #print(final)    
+        if len(x)%4!=0:
+            final=final[0:len(final)-1]+'0'*(4-(len(x)%4))
         #print binary
-        hexcode=hexcode+add+': '+x+'\n'
-    return hexcode
+        add=str(hex(int(add))).replace('0x','')
+        hexcode=hexcode+add+': '+final+'\n'
+    #print(hexcode)
+    return [hexcode,debugcode]
     

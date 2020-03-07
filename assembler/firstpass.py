@@ -1,4 +1,4 @@
-#first pass
+#first pass 
 import os
 import sys
 
@@ -12,6 +12,7 @@ PSOP={  'INC':['ADI $0,$0,1'],
 
         'PUSH':['STRG $0,SP','SBI SP,SP,1'],
         'POP':['ADI SP,SP,1','LDRG $0,SP'],
+        'PUSHI':['LDI TR,$0','STRG TR,SP','SBI SP,SP,1'],
 
         'PUSHREGS':['STRG R4,SP','SBI SP,SP,1',
                     'STRG R3,SP','SBI SP,SP,1',
@@ -45,7 +46,9 @@ PSOP={  'INC':['ADI $0,$0,1'],
 
         'BOOT':['LDI LR,0','LDI SP,0xfff0'],
         
-        'PRINT':['IOS $0,0']
+        'PRINT':['IOS $0,0'],
+        'SCAN': ['IOR $0,1'],
+        'SWAP': ['MOV TR,$0','MOV $0,$1','MOV $1,TR']
 
     }
 
@@ -112,16 +115,18 @@ def addHault(code):
 def getlen(code):
     Length=0
     i=0
+    print(code)
     while(i<len(code)):
-        if '.' in code[i] or '#include' in code[i]:
+        if '.' in code[i] or 'import' in code[i]:
             pass
         else:
             Length+=1
         i+=1
+    Length+=len(PSOP['BOOT'])-1
     return Length
 
 def include(Target):
-    print(Target)
+    #print(Target)
     if Target[-1]=='*':
         Target=Target.replace('*','')
         files=os.listdir(libpath+Target)
@@ -196,9 +201,7 @@ def psop(code):
             #print code
             
             a+=1
-    
-
-
+            
     return code
 
 
@@ -212,18 +215,33 @@ def saveVariable(varname,add,val):
     add=int(add)
     VARIABLES.update([[varname,[add,val]]])
 
+def procesStr(txt):
+    print(txt)
+    
 def assignAddresses(code,l):
     address=0
     i=0
     flag=0
-    #print l
+    TexT=''
+    stringflag=0
+    #print(l)
     while(i<len(code)):
-        
-        if '=' in code[i]:
+
+        if '=' in code[i]: #it is a variable
             tmp=code[i].split('=')
             saveVariable(tmp[0],address,tmp[1])
-        
-        
+
+        if '=' and '"' in code[i]: #it is a string
+            if address%2!=0: #string will always begin at even address
+               address+=1
+            tmp=code[i].split('=')
+            TexT=tmp[1].replace('"','')
+            #TexT=procesStr(TexT)
+
+
+
+            stringflag=1
+            saveVariable(tmp[0],address,TexT+'\n')
         
         if '.' in code[i]: #it is a label
             l+=1
@@ -231,16 +249,33 @@ def assignAddresses(code,l):
             #dont increment address
         else:
             code[i]=str(address)+' '+code[i]
-
+        
+        if i==l:
+           flag=0
+           
 
         if '.data' in code[i]:
             flag=1
-        if i==l:
-            flag=0
+        
         #print [i,l]
         #print code[i]
+
+
+       # print(code[i]+str(stringflag)+str(flag))
+        
         if ('.' not in code[i]) and (flag==1):
-            address+=1
+            if stringflag==1:
+                #print(len(TexT))
+                if(len(TexT)%2==0): # even len
+                    address+=int((len(TexT)/2))+1
+                else:
+                    address+=int((len(TexT)+1)/2)+1
+                TexT=''
+                stringflag=0
+                    
+            else:
+                address+=1
+
         elif ('.' not in code[i]) and (flag==0):
             address+=2
         else:
@@ -281,9 +316,11 @@ def firstpass(code):
     #get length without lib
  
     l=getlen(code)
-    if l%2==0: #length of code not even it wil give wrong addresses to library code after .data since .data section has address incremeent of 1 instead of 2
-        code=code+['DUMVAR=0']
-        l+=1
+    #print(l)
+    #print(code)
+    #if l%2==0: #length of code not even it wil give wrong addresses to library code after .data since .data section has address incremeent of 1 instead of 2
+    #    code=code+['DUMVAR=0']
+    #    l+=1
     #include libraries
     flag=1 #assume it has import
     while flag==1:
@@ -309,8 +346,10 @@ def firstpass(code):
 
     #assign addresses #save labels and variables
     code=assignAddresses(code,l)
+    #print(code)
 
     #remove labels
     code=removeLabels(code)
+    #print(code)
 
     return [code,LABELS,VARIABLES]

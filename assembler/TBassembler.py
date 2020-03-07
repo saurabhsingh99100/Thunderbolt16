@@ -3,9 +3,11 @@ import secondpass as p2
 import sys
 import os
 
-HEADER="v3.0 hex words addressed\n"
+HEADER="v3.0 hex words addressed\n" 
 LABELS={}
 VARIABLES={}
+
+IVT='\nfff0: \nfff1: \nfff2: \nfff3: \nfff4: \nfff5: \nfff6: \nfff7: \nfff8: \nfff9: \nfffa: \nfffb: \nfffc: \nfffd: \nfffe: \nffff: '
 
 
 #--------------------------------------------------------------------------------------
@@ -17,7 +19,15 @@ def generatefile(txt,name): #GENERATES O/P FILE
     f_out=open(name+"_bytecode.txt","w+")
     f_out.write(txt)
     f_out.close()
-    sys.exit("\nAssembling sucessful: bytecode generated....\n\nOutput file:"+name+"_bytecode.txt")
+    print("\nbytecode file:"+name+"_bytecode.txt")
+    return True       
+
+def generateDebugCodeFile(txt,name): #GENERATES O/P FILE
+    name=name.replace(".txt","")
+    f_out=open(name+"_DEBUG.txt","w+")
+    f_out.write(txt)
+    f_out.close()
+    print("\nDEBUG file:"+name+"_DEBUG.txt")
     return True       
 
 
@@ -50,23 +60,31 @@ else:
         if debugflag==1:
             print('----------------pass1---------------------')
             print('\ncode: ')
+            print(code)
             for x in code:
                 ad=int((x.split(' ')[0]).strip())
                 hexad=hex(ad)
-                print(hexad+x.replace(str(ad),''))  #prints address in hex
+                print(hexad+" "+str(x[x.find(str(ad))+len(str(ad)): ]) ) #prints address in hex
             print('\nvariables: ')
             print(VARIABLES)
             print('\nLABELS:')
             print(LABELS)
           
-        code=p2.secondpass(code,LABELS,VARIABLES)
+        [code,debugcode]=p2.secondpass(code,LABELS,VARIABLES)
         code=HEADER+code
+        
+        
         if debugflag==1:
             print("----------------pass2---------------------\n")
             print(code)
+            print('--Interrupt Vector Table--')
+            print(IVT)
+
+        code=code+IVT
+
         generatefile(code,filename)
+        generateDebugCodeFile(debugcode,filename)
+        sys.exit('\nassembling sucessful...')
 
     except IOError:
         error("assembler error: file not found or is inaccessable---")
-
-
